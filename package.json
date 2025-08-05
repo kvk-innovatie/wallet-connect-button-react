@@ -1,0 +1,51 @@
+{
+  "name": "wallet-connect-button-react",
+  "version": "1.0.0",
+  "description": "A React component for NL Wallet integration",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "lint": "eslint src --ext .ts,.tsx",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "react",
+    "nl-wallet",
+    "component",
+    "wallet",
+    "button"
+  ],
+  "author": "Michiel Mayer",
+  "license": "MIT",
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0",
+    "axios": ">=1.0.0"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^25.0.0",
+    "rollup-plugin-copy": "^3.5.0",
+    "@rollup/plugin-json": "^6.0.0",
+    "@rollup/plugin-node-resolve": "^15.0.0",
+    "@rollup/plugin-typescript": "^11.0.0",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "eslint": "^8.0.0",
+    "eslint-plugin-react": "^7.0.0",
+    "eslint-plugin-react-hooks": "^4.0.0",
+    "rollup": "^4.0.0",
+    "typescript": "^5.0.0",
+    "tslib": "^2.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/michielmayer/wallet-connect-button-react.git"
+  },
+  "homepage": "https://github.com/michielmayer/wallet-connect-button-react"
+}
