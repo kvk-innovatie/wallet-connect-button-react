@@ -9,9 +9,9 @@ interface AttributeData {
 
 interface DisclosedAttributesResponse {
   attributes?: {
-    "urn:eudi:pid:nl:1"?: {
+    [key: string]: {
       attributes?: {
-        "urn:eudi:pid:nl:1"?: AttributeData;
+        [key: string]: AttributeData;
       };
       issuerUri?: string;
       ca?: string;
@@ -122,26 +122,6 @@ function NLWalletButton({ children, clientId, onSuccess, apiKey, walletConnectHo
     const baseUrl = walletConnectHost || "https://wallet-connect.eu";
     let url = baseUrl + `/disclosed-attributes?session_token=${session_token}&client_id=${clientId}`;
     if (nonce) url = `${url}&nonce=${nonce}`;
-
-    // Example response structure
-    // {
-    //   "attributes": {
-    //     "urn:eudi:pid:nl:1": {
-    //       "attributes": {
-    //         "urn:eudi:pid:nl:1": {
-    //           "age_over_18": true
-    //         }
-    //       },
-    //       "issuerUri": "https://cert.issuer.example.com/",
-    //       "ca": "ca.issuer.example.com",
-    //       "validityInfo": {
-    //         "signed": "2025-07-22T12:08:12Z",
-    //         "validFrom": "2025-07-22T00:00:00Z",
-    //         "validUntil": "2026-07-22T00:00:00Z"
-    //       }
-    //     }
-    //   }
-    // }
 
     const headers = apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {};
     axios
