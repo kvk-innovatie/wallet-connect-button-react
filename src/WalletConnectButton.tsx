@@ -24,7 +24,7 @@ interface DisclosedAttributesResponse {
   };
 }
 
-export interface NLWalletButtonProps {
+export interface WalletConnectButtonProps {
   children?: React.ReactNode;
   clientId: string;
   onSuccess: (attributes: AttributeData | undefined) => void;
@@ -56,7 +56,7 @@ declare global {
   }
 }
 
-function NLWalletButton({ children, clientId, onSuccess, apiKey, walletConnectHost }: NLWalletButtonProps) {
+function WalletConnectButton({ children, clientId, onSuccess, apiKey, walletConnectHost }: WalletConnectButtonProps) {
   const [searchParams, setSearchParams, removeSearchParam] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -176,4 +176,4 @@ function NLWalletButton({ children, clientId, onSuccess, apiKey, walletConnectHo
   );
 }
 
-export default NLWalletButton;
+export default WalletConnectButton;

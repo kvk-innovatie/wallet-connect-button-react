@@ -1,3 +1,3 @@
-export { default as NLWalletButton } from './NLWalletButton';
-export { default } from './NLWalletButton';
-export type { NLWalletButtonProps } from './NLWalletButton';
+export { default as WalletConnectButton } from './WalletConnectButton';
+export { default } from './WalletConnectButton';
+export type { WalletConnectButtonProps } from './WalletConnectButton';
