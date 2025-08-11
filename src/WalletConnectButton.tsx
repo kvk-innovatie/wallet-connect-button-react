@@ -34,11 +34,11 @@ export interface WalletConnectButtonProps {
 
 
 // Define custom events
-interface NLWalletSuccessEvent extends CustomEvent {
+interface WalletButtonSuccessEvent extends CustomEvent {
   detail: [string, string]; // [session_token, session_type]
 }
 
-interface NLWalletFailedEvent extends CustomEvent {
+interface WalletButtonFailedEvent extends CustomEvent {
   detail: any;
 }
 
@@ -94,7 +94,7 @@ function WalletConnectButton({ children, clientId, onSuccess, apiKey, walletConn
 
   // Function to handle the 'success' event
   const handleSuccess = (e: Event) => {
-    const customEvent = e as NLWalletSuccessEvent;
+    const customEvent = e as WalletButtonSuccessEvent;
     if (customEvent.detail && customEvent.detail.length > 1) {
       const session_token = customEvent.detail[0];
       const session_type = customEvent.detail[1];
@@ -108,7 +108,7 @@ function WalletConnectButton({ children, clientId, onSuccess, apiKey, walletConn
   };
 
   const handleFailed = (e: Event) => {
-    const customEvent = e as NLWalletFailedEvent;
+    const customEvent = e as WalletButtonFailedEvent;
     console.log("Failed event received:", customEvent.detail);
   };
 
