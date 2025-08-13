@@ -30,6 +30,7 @@ export interface WalletConnectButtonProps {
   onSuccess: (attributes: AttributeData | undefined) => void;
   apiKey?: string;
   walletConnectHost?: string;
+  lang?: string;
 }
 
 
@@ -56,7 +57,7 @@ declare global {
   }
 }
 
-function WalletConnectButton({ children, clientId, onSuccess, apiKey, walletConnectHost }: WalletConnectButtonProps) {
+function WalletConnectButton({ children, clientId, onSuccess, apiKey, walletConnectHost, lang }: WalletConnectButtonProps) {
   const [searchParams, setSearchParams, removeSearchParam] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -119,8 +120,8 @@ function WalletConnectButton({ children, clientId, onSuccess, apiKey, walletConn
     if (!session_token) return;
 
     setLoading(true);
-    const baseUrl = walletConnectHost || "https://wallet-connect.eu";
-    let url = baseUrl + `/disclosed-attributes?session_token=${session_token}&client_id=${clientId}`;
+    const baseUrl = apiKey ? (walletConnectHost || "https://wallet-connect.eu") : "";
+    let url = baseUrl + `/api/disclosed-attributes?session_token=${session_token}&client_id=${clientId}`;
     if (nonce) url = `${url}&nonce=${nonce}`;
 
     const headers = apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {};
@@ -168,10 +169,10 @@ function WalletConnectButton({ children, clientId, onSuccess, apiKey, walletConn
       ref={buttonRef}
       text={children}
       usecase={clientId}
-      start-url={`${walletConnectHost || "https://wallet-connect.eu"}/create-session?lang=en&return_url=${encodeURIComponent(
+      start-url={`${walletConnectHost || "https://wallet-connect.eu"}/api/create-session?lang=en&return_url=${encodeURIComponent(
         window.location.href
       )}`}
-      lang="nl"
+      lang={lang || "nl"}
     ></nl-wallet-button>
   );
 }
