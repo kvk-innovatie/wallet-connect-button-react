@@ -138,6 +138,9 @@ function WalletConnectButton({ children, clientId, onSuccess, apiKey, walletConn
       .catch((error: Error) => {
         console.log(error.message);
         setError(error.message);
+        // Remove session_token from URL after failed request
+        removeSearchParam('session_token');
+        if (nonce) removeSearchParam('nonce');
         setLoading(false);
       });
   }, [searchParams, onSuccess]);
