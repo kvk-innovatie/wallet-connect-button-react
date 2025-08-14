@@ -1,6 +1,6 @@
 {
   "name": "wallet-connect-button-react",
-  "version": "1.0.5",
+  "version": "1.1.0",
   "description": "A React component for NL Wallet integration",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",

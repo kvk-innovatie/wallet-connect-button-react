@@ -26,9 +26,9 @@ fi
 
 echo "✅ Build completed successfully"
 
-# Bump minor version
-echo "⬆️  Bumping minor version..."
-npm version minor --no-git-tag-version
+# Bump patch version
+echo "⬆️  Bumping patch version..."
+npm version patch --no-git-tag-version
 
 # Get the new version
 NEW_VERSION=$(node -p "require('./package.json').version")
