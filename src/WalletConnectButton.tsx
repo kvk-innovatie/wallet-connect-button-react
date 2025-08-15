@@ -131,8 +131,9 @@ function WalletConnectButton({ children, clientId, onSuccess, apiKey, walletConn
         console.log("Disclosed attributes:", data);
         // Extract age_over_18 from nested response structure
         onSuccess(data);
-        // Remove session_token from URL after successful retrieval
+        // Remove session_token and nonce from URL after successful retrieval
         removeSearchParam('session_token');
+        if (nonce) removeSearchParam('nonce');
         setLoading(false);
       })
       .catch((error: Error) => {
