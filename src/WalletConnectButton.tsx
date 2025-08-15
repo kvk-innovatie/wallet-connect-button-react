@@ -25,7 +25,7 @@ interface DisclosedAttributesResponse {
 }
 
 export interface WalletConnectButtonProps {
-  children?: React.ReactNode;
+  label?: string;
   clientId: string;
   onSuccess: (attributes: AttributeData | undefined) => void;
   apiKey?: string;
@@ -57,7 +57,7 @@ declare global {
   }
 }
 
-function WalletConnectButton({ children, clientId, onSuccess, apiKey, walletConnectHost, lang }: WalletConnectButtonProps) {
+function WalletConnectButton({ label, clientId, onSuccess, apiKey, walletConnectHost, lang }: WalletConnectButtonProps) {
   const [searchParams, setSearchParams, removeSearchParam] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -171,7 +171,7 @@ function WalletConnectButton({ children, clientId, onSuccess, apiKey, walletConn
   return (
     <nl-wallet-button
       ref={buttonRef}
-      text={children}
+      text={label}
       usecase={clientId}
       start-url={`${walletConnectHost || "https://wallet-connect.eu"}/api/create-session?lang=en&return_url=${encodeURIComponent(
         window.location.href
