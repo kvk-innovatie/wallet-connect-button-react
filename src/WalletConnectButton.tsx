@@ -31,6 +31,9 @@ export interface WalletConnectButtonProps {
   apiKey?: string;
   walletConnectHost?: string;
   lang?: string;
+  sameDeviceUl?: string;
+  crossDeviceUl?: string;
+  helpBaseUrl?: string;
 }
 
 
@@ -52,12 +55,15 @@ declare global {
         usecase?: string;
         'start-url'?: string;
         lang?: string;
+        'same-device-ul'?: string;
+        'cross-device-ul'?: string;
+        'help-base-url'?: string;
       };
     }
   }
 }
 
-function WalletConnectButton({ label, clientId, onSuccess, apiKey, walletConnectHost, lang }: WalletConnectButtonProps) {
+function WalletConnectButton({ label, clientId, onSuccess, apiKey, walletConnectHost, lang, sameDeviceUl, crossDeviceUl, helpBaseUrl }: WalletConnectButtonProps) {
   const [searchParams, setSearchParams, removeSearchParam] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -177,6 +183,9 @@ function WalletConnectButton({ label, clientId, onSuccess, apiKey, walletConnect
         window.location.href
       )}`}
       lang={lang || "nl"}
+      same-device-ul={sameDeviceUl}
+      cross-device-ul={crossDeviceUl}
+      help-base-url={helpBaseUrl}
     ></nl-wallet-button>
   );
 }
