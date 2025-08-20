@@ -31,9 +31,8 @@ export interface WalletConnectButtonProps {
   apiKey?: string;
   walletConnectHost?: string;
   lang?: string;
-  sameDeviceUl?: string;
-  crossDeviceUl?: string;
   helpBaseUrl?: string;
+  issuance?: boolean;
 }
 
 
@@ -63,12 +62,26 @@ declare global {
   }
 }
 
-function WalletConnectButton({ label, clientId, onSuccess, apiKey, walletConnectHost, lang, sameDeviceUl, crossDeviceUl, helpBaseUrl }: WalletConnectButtonProps) {
+function constructURI(clientId: string, session_type: string) {
+  let request_uri = `https://issuance.wallet-connect.eu/disclosure/${clientId}/request_uri?session_type=${session_type}`;
+  
+  let request_uri_method = "post";
+  let client_id_uri = `${clientId}.example.com`;
+
+  return `walletdebuginteraction://wallet.edi.rijksoverheid.nl/disclosure_based_issuance?request_uri=${encodeURIComponent(
+    request_uri
+  )}&request_uri_method=${request_uri_method}&client_id=${client_id_uri}`;
+}
+
+function WalletConnectButton({ label, clientId, onSuccess, apiKey, walletConnectHost, lang, helpBaseUrl, issuance }: WalletConnectButtonProps) {
   const [searchParams, setSearchParams, removeSearchParam] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const buttonRef = useRef<HTMLElement>(null);
+  
+  const sameDeviceUl = constructURI(clientId, "same_device");
+  const crossDeviceUl = constructURI(clientId, "cross_device");
 
   useEffect(() => {
     // Dynamically import the web component
@@ -178,7 +191,7 @@ function WalletConnectButton({ label, clientId, onSuccess, apiKey, walletConnect
     <nl-wallet-button
       ref={buttonRef}
       text={label}
-      usecase={clientId}
+      usecase={issuance ? "" : clientId}
       start-url={`${walletConnectHost || "https://wallet-connect.eu"}/api/create-session?lang=en&return_url=${encodeURIComponent(
         window.location.href
       )}`}
