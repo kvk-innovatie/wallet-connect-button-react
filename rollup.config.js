@@ -3,6 +3,7 @@ import commonjs from '@rollup/plugin-commonjs';
 import typescript from '@rollup/plugin-typescript';
 import json from '@rollup/plugin-json';
 import copy from 'rollup-plugin-copy';
+import replace from '@rollup/plugin-replace';
 
 export default {
   input: 'src/index.ts',
@@ -23,6 +24,10 @@ export default {
     }
   ],
   plugins: [
+    replace({
+      'process.env.NODE_ENV': JSON.stringify('production'),
+      preventAssignment: true
+    }),
     resolve({
       browser: true,
       preferBuiltins: false
@@ -41,7 +46,7 @@ export default {
       declarationDir: 'dist'
     })
   ],
-  external: ['react', 'react-dom', 'react-router-dom', 'axios'],
+  external: ['react', 'react-dom', 'react-router-dom', 'react/jsx-runtime', 'axios'],
   onwarn(warning, warn) {
     // Ignore "use client" directive warnings from React Router
     if (warning.code === 'MODULE_LEVEL_DIRECTIVE') {
