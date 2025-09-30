@@ -2,9 +2,35 @@ import React, { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "./useSearchParams";
 import axios from "axios";
 
+// Global cache to prevent duplicate requests
+const credentialsCache = new Map<string, { 
+  data?: any; 
+  promise?: Promise<any>; 
+  subscribers?: Set<Function>;
+}>();
+
 interface AttributeData {
   age_over_18?: boolean;
   [key: string]: any;
+}
+
+interface RequestedCredential {
+  credentialKey: string;
+  credentialName: {
+    en: string;
+    nl: string;
+  };
+  websiteUrl: string;
+  vct: string;
+}
+
+interface RequestedCredentialsResponse {
+  success: boolean;
+  data: {
+    clientId: string;
+    companyName: string;
+    requestedCredentials: RequestedCredential[];
+  };
 }
 
 interface DisclosedAttributesResponse {
@@ -57,13 +83,15 @@ declare global {
         'same-device-ul'?: string;
         'cross-device-ul'?: string;
         'help-base-url'?: string;
+        onClick?: (event: Event) => void;
       };
     }
   }
 }
 
-function constructURI(clientId: string, session_type: string) {
-  let request_uri = `https://issuance.wallet-connect.eu/disclosure/${clientId}/request_uri?session_type=${session_type}`;
+function constructURI(clientId: string, session_type: string, walletConnectHost?: string) {
+  const baseHost = walletConnectHost || "https://issuance.wallet-connect.eu";
+  let request_uri = `${baseHost}/disclosure/${clientId}/request_uri?session_type=${session_type}`;
   
   let request_uri_method = "post";
   let client_id_uri = `${clientId}.example.com`;
@@ -80,8 +108,8 @@ function WalletConnectButton({ label, clientId, onSuccess, apiKey, walletConnect
 
   const buttonRef = useRef<HTMLElement>(null);
   
-  const sameDeviceUl = constructURI(clientId, "same_device");
-  const crossDeviceUl = constructURI(clientId, "cross_device");
+  const sameDeviceUl = constructURI(clientId, "same_device", walletConnectHost);
+  const crossDeviceUl = constructURI(clientId, "cross_device", walletConnectHost);
 
   useEffect(() => {
     // Dynamically import the web component
@@ -94,6 +122,9 @@ function WalletConnectButton({ label, clientId, onSuccess, apiKey, walletConnect
         if (button) {
           button.addEventListener("success", handleSuccess as EventListener);
           button.addEventListener("failed", handleFailed as EventListener);
+          
+          // Add click listener directly to the element
+          button.addEventListener("click", handleButtonClick as EventListener);
         }
       } catch (error) {
         console.warn('Could not load nl-wallet-web.js:', error);
@@ -108,9 +139,146 @@ function WalletConnectButton({ label, clientId, onSuccess, apiKey, walletConnect
       if (button) {
         button.removeEventListener("success", handleSuccess as EventListener);
         button.removeEventListener("failed", handleFailed as EventListener);
+        button.removeEventListener("click", handleButtonClick as EventListener);
       }
     };
   }, []);
+
+  const fetchRequestedCredentials = async () => {
+    if (!apiKey || !clientId) return [];
+    
+    const cacheKey = `${clientId}-${walletConnectHost || "default"}`;
+    
+    // Check if we already have data in cache
+    const cached = credentialsCache.get(cacheKey);
+    if (cached?.data) {
+      return cached.data;
+    }
+    
+    // Check if there's already a request in progress
+    if (cached?.promise) {
+      return await cached.promise;
+    }
+    
+    const fetchPromise = (async () => {
+      try {
+        const baseUrl = walletConnectHost || "https://wallet-connect.eu";
+        const url = `${baseUrl}/api/client/${clientId}/requested-credentials`;
+        const headers = { 'Authorization': `Bearer ${apiKey}` };
+        
+        const response = await axios.get<RequestedCredentialsResponse>(url, { headers });
+        
+        // Extract credentials from the response
+        const credentials = response.data?.data?.requestedCredentials || [];
+        
+        // Cache the result
+        credentialsCache.set(cacheKey, { data: credentials });
+        return credentials;
+      } catch (error: any) {
+        // Remove failed request from cache
+        credentialsCache.delete(cacheKey);
+        throw error;
+      }
+    })();
+    
+    // Cache the promise to prevent duplicate requests
+    credentialsCache.set(cacheKey, { promise: fetchPromise });
+    
+    return await fetchPromise;
+  };
+
+  const injectCredentialsIntoShadowDOM = (credentials: RequestedCredential[], retryCount = 0) => {
+    const maxRetries = 10;
+    const walletButton = buttonRef.current;
+    
+    if (!walletButton || !walletButton.shadowRoot) {
+      return;
+    }
+
+    // Remove any existing credential info
+    const existingCredentials = walletButton.shadowRoot.querySelector('.required-credentials');
+    if (existingCredentials) {
+      existingCredentials.remove();
+    }
+
+    if (credentials.length === 0) return;
+
+    // Look for the modal and website section
+    const modal = walletButton.shadowRoot.querySelector('.modal');
+    if (!modal) {
+      // Retry if modal not found yet
+      if (retryCount < maxRetries) {
+        setTimeout(() => {
+          injectCredentialsIntoShadowDOM(credentials, retryCount + 1);
+        }, 200);
+        return;
+      }
+      return;
+    }
+
+    const websiteSection = modal.querySelector('.website');
+
+    // Determine language and translations
+    const isNL = lang === 'nl';
+    const headerText = isNL ? 'Benodigde Attestaties:' : 'Required Credentials:';
+    const getLinkText = isNL ? '→ Verkrijg attestatie' : '→ Get credential';
+
+    // Create credential info element
+    const credentialsDiv = document.createElement('div');
+    credentialsDiv.className = 'required-credentials';
+    credentialsDiv.innerHTML = `
+      <div style="
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        padding: 12px;
+        font-family: inherit;
+        font-size: 13px;
+        line-height: 1.4;
+      ">
+        <div style="margin: 0 0 8px 0; color: #212529; font-size: 14px; font-weight: 600;">${headerText}</div>
+        ${credentials.map(credential => {
+          const credentialName = isNL ? credential.credentialName.nl : credential.credentialName.en;
+          return `
+            <div style="margin-bottom: 6px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
+              <span style="color: #495057; font-weight: 500;">${credentialName}</span>
+              ${credential.websiteUrl ? `
+                <a href="${credential.websiteUrl}" target="_blank" rel="noopener noreferrer" style="
+                  color: #0066cc;
+                  text-decoration: none;
+                  font-size: 12px;
+                  white-space: nowrap;
+                ">${getLinkText}</a>
+              ` : ''}
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+
+    // Insert the credentials div after the website section
+    if (websiteSection) {
+      websiteSection.insertAdjacentElement('afterend', credentialsDiv);
+    } else {
+      // Fallback: insert at the beginning of modal
+      modal.insertBefore(credentialsDiv, modal.firstChild);
+    }
+  };
+
+  const handleButtonClick = async (_event: Event) => {
+    try {
+      const credentials = await fetchRequestedCredentials();
+      
+      if (credentials && credentials.length > 0) {
+        // Inject credentials into the shadow DOM with multiple attempts
+        setTimeout(() => {
+          injectCredentialsIntoShadowDOM(credentials);
+        }, 100);
+      }
+    } catch (error) {
+      console.error('Failed to fetch credentials:', error);
+    }
+  };
 
   // Function to handle the 'success' event
   const handleSuccess = (e: Event) => {
@@ -199,6 +367,7 @@ function WalletConnectButton({ label, clientId, onSuccess, apiKey, walletConnect
       same-device-ul={sameDeviceUl}
       cross-device-ul={crossDeviceUl}
       help-base-url={helpBaseUrl}
+      onClick={handleButtonClick}
     ></nl-wallet-button>
   );
 }
