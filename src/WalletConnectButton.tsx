@@ -55,7 +55,8 @@ export interface WalletConnectButtonProps {
   clientId: string;
   onSuccess: (attributes: AttributeData | undefined) => void;
   apiKey?: string;
-  walletConnectHost?: string;
+  useLocalWcServer?: boolean;
+  business?: boolean;
   lang?: string;
   helpBaseUrl?: string;
   issuance?: boolean;
@@ -89,27 +90,49 @@ declare global {
   }
 }
 
-function constructURI(clientId: string, session_type: string, walletConnectHost?: string) {
-  const baseHost = walletConnectHost || "https://issuance.wallet-connect.eu";
-  let request_uri = `${baseHost}/disclosure/${clientId}/request_uri?session_type=${session_type}`;
-  
+function getDefaultHost(useLocalWcServer: boolean, business: boolean, issuance: boolean) {
+  // If useLocalWcServer is set, use local server
+  if (useLocalWcServer) {
+    if (business) {
+      return issuance ? 'http://localhost:4007' : 'http://bw.localhost:3021';
+    }
+
+    return issuance ? 'http://localhost:3007' : 'http://localhost:3021';
+  }
+
+  // Otherwise use remote servers
+  if (business) {
+    return issuance ? 'https://bw.issuance.wallet-connect.eu' : 'https://bw.wallet-connect.eu';
+  }
+
+  return issuance ? 'https://issuance.wallet-connect.eu' : 'https://wallet-connect.eu';
+}
+
+function constructURI(clientId: string, session_type: string, walletConnectHost: string, business: boolean) {
+  let request_uri = `${walletConnectHost}/disclosure/${clientId}/request_uri?session_type=${session_type}`;
   let request_uri_method = "post";
   let client_id_uri = `${clientId}.example.com`;
 
-  return `walletdebuginteraction://wallet.edi.rijksoverheid.nl/disclosure_based_issuance?request_uri=${encodeURIComponent(
+  const deepLinkScheme = business
+    ? 'businesswalletdebuginteraction://wallet.kvk.rijksoverheid.nl'
+    : 'walletdebuginteraction://wallet.edi.rijksoverheid.nl';
+
+  return `${deepLinkScheme}/disclosure_based_issuance?request_uri=${encodeURIComponent(
     request_uri
   )}&request_uri_method=${request_uri_method}&client_id=${client_id_uri}`;
 }
 
-function WalletConnectButton({ label, clientId, onSuccess, apiKey, walletConnectHost, lang, helpBaseUrl, issuance }: WalletConnectButtonProps) {
+function WalletConnectButton({ label, clientId, onSuccess, apiKey, useLocalWcServer = false, business = false, lang, helpBaseUrl, issuance = false }: WalletConnectButtonProps) {
   const [searchParams, setSearchParams, removeSearchParam] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const buttonRef = useRef<HTMLElement>(null);
-  
-  const sameDeviceUl = constructURI(clientId, "same_device", walletConnectHost);
-  const crossDeviceUl = constructURI(clientId, "cross_device", walletConnectHost);
+
+  const walletConnectHost = getDefaultHost(useLocalWcServer, business, issuance);
+
+  const sameDeviceUl = constructURI(clientId, "same_device", walletConnectHost, business);
+  const crossDeviceUl = constructURI(clientId, "cross_device", walletConnectHost, business);
 
   useEffect(() => {
     // Dynamically import the web component
@@ -146,31 +169,30 @@ function WalletConnectButton({ label, clientId, onSuccess, apiKey, walletConnect
 
   const fetchRequestedCredentials = async () => {
     if (!apiKey || !clientId) return [];
-    
-    const cacheKey = `${clientId}-${walletConnectHost || "default"}`;
-    
+
+    const cacheKey = `${clientId}-${walletConnectHost}`;
+
     // Check if we already have data in cache
     const cached = credentialsCache.get(cacheKey);
     if (cached?.data) {
       return cached.data;
     }
-    
+
     // Check if there's already a request in progress
     if (cached?.promise) {
       return await cached.promise;
     }
-    
+
     const fetchPromise = (async () => {
       try {
-        const baseUrl = walletConnectHost || "https://wallet-connect.eu";
-        const url = `${baseUrl}/api/client/${clientId}/requested-credentials`;
+        const url = `${walletConnectHost}/api/client/${clientId}/requested-credentials`;
         const headers = { 'Authorization': `Bearer ${apiKey}` };
-        
+
         const response = await axios.get<RequestedCredentialsResponse>(url, { headers });
-        
+
         // Extract credentials from the response
         const credentials = response.data?.data?.requestedCredentials || [];
-        
+
         // Cache the result
         credentialsCache.set(cacheKey, { data: credentials });
         return credentials;
@@ -180,10 +202,10 @@ function WalletConnectButton({ label, clientId, onSuccess, apiKey, walletConnect
         throw error;
       }
     })();
-    
+
     // Cache the promise to prevent duplicate requests
     credentialsCache.set(cacheKey, { promise: fetchPromise });
-    
+
     return await fetchPromise;
   };
 
@@ -307,7 +329,7 @@ function WalletConnectButton({ label, clientId, onSuccess, apiKey, walletConnect
     if (!session_token) return;
 
     setLoading(true);
-    const baseUrl = apiKey ? (walletConnectHost || "https://wallet-connect.eu") : "";
+    const baseUrl = apiKey ? walletConnectHost : "";
     let url = baseUrl + `/api/disclosed-attributes?session_token=${session_token}&client_id=${clientId}`;
     if (nonce) url = `${url}&nonce=${nonce}`;
 
@@ -360,7 +382,7 @@ function WalletConnectButton({ label, clientId, onSuccess, apiKey, walletConnect
       ref={buttonRef}
       text={label}
       usecase={issuance ? "" : clientId}
-      start-url={`${walletConnectHost || "https://wallet-connect.eu"}/api/create-session?lang=en&return_url=${encodeURIComponent(
+      start-url={`${walletConnectHost}/api/create-session?lang=en&return_url=${encodeURIComponent(
         window.location.href
       )}`}
       lang={lang || "nl"}
