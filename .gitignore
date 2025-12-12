@@ -35,3 +35,5 @@ coverage/
 
 # ESLint cache
 .eslintcache
+
+.npmrc
