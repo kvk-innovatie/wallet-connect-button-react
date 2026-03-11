@@ -84,6 +84,7 @@ declare global {
         'same-device-ul'?: string;
         'cross-device-ul'?: string;
         'help-base-url'?: string;
+        business?: boolean;
         onClick?: (event: Event) => void;
       };
     }
@@ -389,6 +390,7 @@ function WalletConnectButton({ label, clientId, onSuccess, apiKey, useLocalWcSer
       same-device-ul={sameDeviceUl}
       cross-device-ul={crossDeviceUl}
       help-base-url={helpBaseUrl}
+      business={business}
       onClick={handleButtonClick}
     ></nl-wallet-button>
   );
