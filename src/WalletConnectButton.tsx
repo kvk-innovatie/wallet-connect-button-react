@@ -390,7 +390,7 @@ function WalletConnectButton({ label, clientId, onSuccess, apiKey, useLocalWcSer
       same-device-ul={sameDeviceUl}
       cross-device-ul={crossDeviceUl}
       help-base-url={helpBaseUrl}
-      business={business}
+      business={business || undefined}
       onClick={handleButtonClick}
     ></nl-wallet-button>
   );
