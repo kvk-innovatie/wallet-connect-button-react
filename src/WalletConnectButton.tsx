@@ -95,10 +95,10 @@ function getDefaultHost(useLocalWcServer: boolean, business: boolean, issuance: 
   // If useLocalWcServer is set, use local server
   if (useLocalWcServer) {
     if (business) {
-      return issuance ? 'http://localhost:4007' : 'http://bw.localhost:3021';
+      return issuance ? 'http://localhost:5017' : 'http://bw.localhost:5021';
     }
 
-    return issuance ? 'http://localhost:3007' : 'http://localhost:3021';
+    return issuance ? 'http://localhost:5007' : 'http://localhost:5021';
   }
 
   // Otherwise use remote servers
@@ -112,7 +112,7 @@ function getDefaultHost(useLocalWcServer: boolean, business: boolean, issuance: 
 function constructURI(clientId: string, session_type: string, walletConnectHost: string, business: boolean) {
   let request_uri = `${walletConnectHost}/disclosure/${clientId}/request_uri?session_type=${session_type}`;
   let request_uri_method = "post";
-  let client_id_uri = `${clientId}.example.com`;
+  let client_id_uri = `x509_san_dns:${new URL(walletConnectHost).hostname}`;
 
   const deepLinkScheme = business
     ? 'businesswalletdebuginteraction://wallet.kvk.rijksoverheid.nl'
@@ -378,12 +378,14 @@ function WalletConnectButton({ label, clientId, onSuccess, apiKey, useLocalWcSer
     );
   }
   
+  const startHost = apiKey ? walletConnectHost : "";
+
   return (
     <nl-wallet-button
       ref={buttonRef}
       text={label}
       usecase={issuance ? "" : clientId}
-      start-url={`${walletConnectHost}/api/create-session?lang=en&return_url=${encodeURIComponent(
+      start-url={`${startHost}/api/create-session?lang=en&return_url=${encodeURIComponent(
         window.location.href
       )}`}
       lang={lang || "nl"}
