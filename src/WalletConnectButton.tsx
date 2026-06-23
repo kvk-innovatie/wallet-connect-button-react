@@ -60,6 +60,7 @@ export interface WalletConnectButtonProps {
   lang?: string;
   helpBaseUrl?: string;
   issuance?: boolean;
+  over18?: boolean;
 }
 
 
@@ -85,6 +86,7 @@ declare global {
         'cross-device-ul'?: string;
         'help-base-url'?: string;
         business?: boolean;
+        over18?: boolean;
         onClick?: (event: Event) => void;
       };
     }
@@ -123,7 +125,7 @@ function constructURI(clientId: string, session_type: string, walletConnectHost:
   )}&request_uri_method=${request_uri_method}&client_id=${client_id_uri}`;
 }
 
-function WalletConnectButton({ label, clientId, onSuccess, apiKey, useLocalWcServer = false, business = false, lang, helpBaseUrl, issuance = false }: WalletConnectButtonProps) {
+function WalletConnectButton({ label, clientId, onSuccess, apiKey, useLocalWcServer = false, business = false, lang, helpBaseUrl, issuance = false, over18 = false }: WalletConnectButtonProps) {
   const [searchParams, setSearchParams, removeSearchParam] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -393,6 +395,7 @@ function WalletConnectButton({ label, clientId, onSuccess, apiKey, useLocalWcSer
       cross-device-ul={crossDeviceUl}
       help-base-url={helpBaseUrl}
       business={business || undefined}
+      over18={over18 || undefined}
       onClick={handleButtonClick}
     ></nl-wallet-button>
   );
