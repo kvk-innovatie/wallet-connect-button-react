@@ -117,7 +117,7 @@ function constructURI(clientId: string, session_type: string, walletConnectHost:
   let client_id_uri = `x509_san_dns:${new URL(walletConnectHost).hostname}`;
 
   const deepLinkScheme = business
-    ? 'businesswalletdebuginteraction://wallet.kvk.rijksoverheid.nl'
+    ? 'businesswalletdebuginteraction://ebwallet.org'
     : 'walletdebuginteraction://wallet.edi.rijksoverheid.nl';
 
   return `${deepLinkScheme}/disclosure_based_issuance?request_uri=${encodeURIComponent(
