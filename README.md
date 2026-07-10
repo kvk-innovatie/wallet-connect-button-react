@@ -1,6 +1,6 @@
 # wallet-connect-button-react
 
-A React component for NL Wallet integration.
+A React component for NP Wallet integration.
 
 ## Installation
 
