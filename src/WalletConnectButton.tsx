@@ -61,6 +61,7 @@ export interface WalletConnectButtonProps {
   helpBaseUrl?: string;
   issuance?: boolean;
   over18?: boolean;
+  nbwallet?: boolean;
 }
 
 
@@ -87,13 +88,18 @@ declare global {
         'help-base-url'?: string;
         business?: boolean;
         over18?: boolean;
+        nbwallet?: boolean;
         onClick?: (event: Event) => void;
       };
     }
   }
 }
 
-function getDefaultHost(useLocalWcServer: boolean, business: boolean, issuance: boolean) {
+function getDefaultHost(useLocalWcServer: boolean, business: boolean, issuance: boolean, nbwallet: boolean) {
+  if (nbwallet) {
+    return useLocalWcServer ? 'http://localhost:9070' : 'https://nbwallet.org/wc';
+  }
+
   // If useLocalWcServer is set, use local server
   if (useLocalWcServer) {
     if (business) {
@@ -111,12 +117,14 @@ function getDefaultHost(useLocalWcServer: boolean, business: boolean, issuance: 
   return issuance ? 'https://issuance.wallet-connect.eu' : 'https://wallet-connect.eu';
 }
 
-function constructURI(clientId: string, session_type: string, walletConnectHost: string, business: boolean) {
+function constructURI(clientId: string, session_type: string, walletConnectHost: string, business: boolean, nbwallet: boolean) {
   let request_uri = `${walletConnectHost}/disclosure/${clientId}/request_uri?session_type=${session_type}`;
   let request_uri_method = "post";
   let client_id_uri = `x509_san_dns:${new URL(walletConnectHost).hostname}`;
 
-  const deepLinkScheme = business
+    const deepLinkScheme = nbwallet
+    ? 'businesswalletdebuginteraction://nbwallet.org'
+    : business
     ? 'businesswalletdebuginteraction://ebwallet.org'
     : 'walletdebuginteraction://wallet.edi.rijksoverheid.nl';
 
@@ -125,17 +133,17 @@ function constructURI(clientId: string, session_type: string, walletConnectHost:
   )}&request_uri_method=${request_uri_method}&client_id=${client_id_uri}`;
 }
 
-function WalletConnectButton({ label, clientId, onSuccess, apiKey, useLocalWcServer = false, business = false, lang, helpBaseUrl, issuance = false, over18 = false }: WalletConnectButtonProps) {
+function WalletConnectButton({ label, clientId, onSuccess, apiKey, useLocalWcServer = false, business = false, lang, helpBaseUrl, issuance = false, over18 = false, nbwallet = false }: WalletConnectButtonProps) {
   const [searchParams, setSearchParams, removeSearchParam] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const buttonRef = useRef<HTMLElement>(null);
 
-  const walletConnectHost = getDefaultHost(useLocalWcServer, business, issuance);
+  const walletConnectHost = getDefaultHost(useLocalWcServer, business, issuance, nbwallet);
 
-  const sameDeviceUl = constructURI(clientId, "same_device", walletConnectHost, business);
-  const crossDeviceUl = constructURI(clientId, "cross_device", walletConnectHost, business);
+  const sameDeviceUl = nbwallet ? undefined : constructURI(clientId, "same_device", walletConnectHost, business, nbwallet);
+  const crossDeviceUl = nbwallet ? undefined : constructURI(clientId, "cross_device", walletConnectHost, business, nbwallet);
 
   useEffect(() => {
     // Dynamically import the web component
@@ -396,6 +404,7 @@ function WalletConnectButton({ label, clientId, onSuccess, apiKey, useLocalWcSer
       help-base-url={helpBaseUrl}
       business={business || undefined}
       over18={over18 || undefined}
+      nbwallet={nbwallet || undefined}
       onClick={handleButtonClick}
     ></nl-wallet-button>
   );
