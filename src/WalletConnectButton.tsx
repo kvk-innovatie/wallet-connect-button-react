@@ -97,7 +97,7 @@ declare global {
 
 function getDefaultHost(useLocalWcServer: boolean, business: boolean, issuance: boolean, nbwallet: boolean) {
   if (nbwallet) {
-    return useLocalWcServer ? 'http://localhost:9070' : 'https://nbwallet.org/wc';
+    return useLocalWcServer ? 'http://localhost:9070' : 'https://wc.nbwallet.org';
   }
 
   // If useLocalWcServer is set, use local server
