@@ -96,8 +96,13 @@ declare global {
 }
 
 function getDefaultHost(useLocalWcServer: boolean, business: boolean, issuance: boolean, nbwallet: boolean) {
+  // NB Wallet: nb-wallet-connect (connect.nbwallet.org); the issuance
+  // server has its own host.
   if (nbwallet) {
-    return useLocalWcServer ? 'http://localhost:9070' : 'https://wc.nbwallet.org';
+    if (useLocalWcServer) {
+      return issuance ? 'http://localhost:5017' : 'http://localhost:5021';
+    }
+    return issuance ? 'https://issuance.connect.nbwallet.org' : 'https://connect.nbwallet.org';
   }
 
   // If useLocalWcServer is set, use local server
@@ -115,6 +120,16 @@ function getDefaultHost(useLocalWcServer: boolean, business: boolean, issuance: 
   }
 
   return issuance ? 'https://issuance.wallet-connect.eu' : 'https://wallet-connect.eu';
+}
+
+// Per-wallet-type help-base-url. An explicit helpBaseUrl prop wins; otherwise
+// fall back to the wallet's own help page (NP Wallet by default).
+function getHelpBaseUrl(over18: boolean, business: boolean, nbwallet: boolean, helpBaseUrl?: string) {
+  if (helpBaseUrl) return helpBaseUrl;
+  if (nbwallet) return 'https://nbwallet.org/download';
+  if (over18) return 'https://18up.eu/nl/install/';
+  if (business) return 'https://ebwallet.org/download';
+  return 'https://npwallet.org/';
 }
 
 function constructURI(clientId: string, session_type: string, walletConnectHost: string, business: boolean, nbwallet: boolean) {
@@ -141,9 +156,14 @@ function WalletConnectButton({ label, clientId, onSuccess, apiKey, useLocalWcSer
   const buttonRef = useRef<HTMLElement>(null);
 
   const walletConnectHost = getDefaultHost(useLocalWcServer, business, issuance, nbwallet);
+  const resolvedHelpBaseUrl = getHelpBaseUrl(over18, business, nbwallet, helpBaseUrl);
 
-  const sameDeviceUl = nbwallet ? undefined : constructURI(clientId, "same_device", walletConnectHost, business, nbwallet);
-  const crossDeviceUl = nbwallet ? undefined : constructURI(clientId, "cross_device", walletConnectHost, business, nbwallet);
+  // Disclosure uses the dynamic strategy — the modal creates the session and
+  // the status response carries the universal link — so only issuance needs
+  // the static same/cross-device links.
+  const useStaticLinks = issuance;
+  const sameDeviceUl = useStaticLinks ? constructURI(clientId, "same_device", walletConnectHost, business, nbwallet) : undefined;
+  const crossDeviceUl = useStaticLinks ? constructURI(clientId, "cross_device", walletConnectHost, business, nbwallet) : undefined;
 
   useEffect(() => {
     // Dynamically import the web component
@@ -401,7 +421,7 @@ function WalletConnectButton({ label, clientId, onSuccess, apiKey, useLocalWcSer
       lang={lang || "nl"}
       same-device-ul={sameDeviceUl}
       cross-device-ul={crossDeviceUl}
-      help-base-url={helpBaseUrl}
+      help-base-url={resolvedHelpBaseUrl}
       business={business || undefined}
       over18={over18 || undefined}
       nbwallet={nbwallet || undefined}
