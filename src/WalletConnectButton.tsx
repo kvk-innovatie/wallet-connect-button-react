@@ -86,6 +86,7 @@ declare global {
         'same-device-ul'?: string;
         'cross-device-ul'?: string;
         'help-base-url'?: string;
+        'client-id'?: string;
         business?: boolean;
         over18?: boolean;
         nbwallet?: boolean;
@@ -138,7 +139,7 @@ function constructURI(clientId: string, session_type: string, walletConnectHost:
   let client_id_uri = `x509_san_dns:${new URL(walletConnectHost).hostname}`;
 
     const deepLinkScheme = nbwallet
-    ? 'businesswalletdebuginteraction://nbwallet.org'
+    ? 'https://nbwallet.org/deeplink'
     : business
     ? 'businesswalletdebuginteraction://ebwallet.org'
     : 'walletdebuginteraction://wallet.edi.rijksoverheid.nl';
@@ -422,6 +423,7 @@ function WalletConnectButton({ label, clientId, onSuccess, apiKey, useLocalWcSer
       same-device-ul={sameDeviceUl}
       cross-device-ul={crossDeviceUl}
       help-base-url={resolvedHelpBaseUrl}
+      client-id={clientId}
       business={business || undefined}
       over18={over18 || undefined}
       nbwallet={nbwallet || undefined}
