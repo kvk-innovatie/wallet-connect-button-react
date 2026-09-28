@@ -20,7 +20,7 @@ import { WalletConnectButton } from 'wallet-connect-button-react';
 
 ```jsx
 <WalletConnectButton 
-  clientId="your-client-id"
+  serviceId="your-service-id"
   apiKey="your-api-key"
   walletConnectHost="https://wallet-connect.eu"
   onSuccess={(attributes) => console.log('Success:', attributes)}
@@ -41,7 +41,15 @@ const handleWalletSuccess = (attributes: any) => {
 
 ### Props
 
-- `clientId: string` - Required. Your client ID for wallet connection
+- `serviceId: string` - The registration's identifier. NB Wallet Connect calls it a
+  **service id**: one company registers a service per website or application.
+- `clientId: string` - The original name for the same value, still fully supported.
+  Give either one; `serviceId` wins when both are set.
+
+With the `nbwallet` attribute the button talks to NB Wallet Connect, which has renamed
+this identifier throughout its API (`service_id`, `/api/service/...`). Every other
+variant still calls its host with `client_id`. That switch is automatic; you only
+choose which prop name to write.
 - `onSuccess: (attributes: AttributeData | undefined) => void` - Required. Callback function called when wallet connection succeeds
 - `apiKey?: string` - Optional. API key for authentication
 - `walletConnectHost?: string` - Optional. Custom wallet connect host URL (defaults to https://wallet-connect.eu)

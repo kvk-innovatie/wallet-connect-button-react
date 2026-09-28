@@ -52,7 +52,15 @@ interface DisclosedAttributesResponse {
 
 export interface WalletConnectButtonProps {
   label?: string;
-  clientId: string;
+  /**
+   * The registration's identifier. `serviceId` is the current name (NB Wallet
+   * Connect calls it a service id: one company registers a service per website
+   * or application); `clientId` is the original name and still works. Give
+   * either one — `serviceId` wins when both are set.
+   */
+  serviceId?: string;
+  /** @deprecated Use `serviceId`. Still fully supported. */
+  clientId?: string;
   onSuccess: (attributes: AttributeData | undefined) => void;
   apiKey?: string;
   useLocalWcServer?: boolean;
@@ -87,6 +95,7 @@ declare global {
         'cross-device-ul'?: string;
         'help-base-url'?: string;
         'client-id'?: string;
+        'service-id'?: string;
         business?: boolean;
         over18?: boolean;
         nbwallet?: boolean;
@@ -149,7 +158,9 @@ function constructURI(clientId: string, session_type: string, walletConnectHost:
   )}&request_uri_method=${request_uri_method}&client_id=${client_id_uri}`;
 }
 
-function WalletConnectButton({ label, clientId, onSuccess, apiKey, useLocalWcServer = false, business = false, lang, helpBaseUrl, issuance = false, over18 = false, nbwallet = false }: WalletConnectButtonProps) {
+function WalletConnectButton({ label, serviceId: serviceIdProp, clientId: clientIdProp, onSuccess, apiKey, useLocalWcServer = false, business = false, lang, helpBaseUrl, issuance = false, over18 = false, nbwallet = false }: WalletConnectButtonProps) {
+  // `serviceId` and `clientId` are two names for the same value.
+  const clientId = serviceIdProp ?? clientIdProp ?? "";
   const [searchParams, setSearchParams, removeSearchParam] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -158,6 +169,10 @@ function WalletConnectButton({ label, clientId, onSuccess, apiKey, useLocalWcSer
 
   const walletConnectHost = getDefaultHost(useLocalWcServer, business, issuance, nbwallet);
   const resolvedHelpBaseUrl = getHelpBaseUrl(over18, business, nbwallet, helpBaseUrl);
+  // NB Wallet Connect renamed the identifier to "service id" across its API;
+  // the other wallet-connect hosts still speak client id.
+  const idParam = nbwallet ? "service_id" : "client_id";
+  const idPath = nbwallet ? "service" : "client";
 
   // Disclosure uses the dynamic strategy — the modal creates the session and
   // the status response carries the universal link — so only issuance needs
@@ -217,7 +232,7 @@ function WalletConnectButton({ label, clientId, onSuccess, apiKey, useLocalWcSer
 
     const fetchPromise = (async () => {
       try {
-        const url = `${walletConnectHost}/api/client/${clientId}/requested-credentials`;
+        const url = `${walletConnectHost}/api/${idPath}/${clientId}/requested-credentials`;
         const headers = { 'Authorization': `Bearer ${apiKey}` };
 
         const response = await axios.get<RequestedCredentialsResponse>(url, { headers });
@@ -362,7 +377,7 @@ function WalletConnectButton({ label, clientId, onSuccess, apiKey, useLocalWcSer
 
     setLoading(true);
     const baseUrl = apiKey ? walletConnectHost : "";
-    let url = baseUrl + `/api/disclosed-attributes?session_token=${session_token}&client_id=${clientId}`;
+    let url = baseUrl + `/api/disclosed-attributes?session_token=${session_token}&${idParam}=${clientId}`;
     if (nonce) url = `${url}&nonce=${nonce}`;
 
     const headers = apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {};
@@ -409,6 +424,8 @@ function WalletConnectButton({ label, clientId, onSuccess, apiKey, useLocalWcSer
     );
   }
   
+  // The inner button is a vendored wallet_web build: older copies know only
+  // `client-id`, newer ones prefer `service-id`. Send both, same value.
   const startHost = apiKey ? walletConnectHost : "";
 
   return (
@@ -424,6 +441,7 @@ function WalletConnectButton({ label, clientId, onSuccess, apiKey, useLocalWcSer
       cross-device-ul={crossDeviceUl}
       help-base-url={resolvedHelpBaseUrl}
       client-id={clientId}
+      service-id={clientId}
       business={business || undefined}
       over18={over18 || undefined}
       nbwallet={nbwallet || undefined}
