@@ -99,6 +99,7 @@ declare global {
         business?: boolean;
         over18?: boolean;
         nbwallet?: boolean;
+        issuance?: boolean;
         onClick?: (event: Event) => void;
       };
     }
@@ -445,6 +446,7 @@ function WalletConnectButton({ label, serviceId: serviceIdProp, clientId: client
       business={business || undefined}
       over18={over18 || undefined}
       nbwallet={nbwallet || undefined}
+      issuance={issuance || undefined}
       onClick={handleButtonClick}
     ></nl-wallet-button>
   );
