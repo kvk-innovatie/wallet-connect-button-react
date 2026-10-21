@@ -70,6 +70,39 @@ export interface WalletConnectButtonProps {
   issuance?: boolean;
   over18?: boolean;
   nbwallet?: boolean;
+  /**
+   * Where the wallet app sends the user after a same-device disclosure; the
+   * verifier appends `session_token` to it. Defaults to the address of the
+   * document the button lives in, which is wrong inside an iframe: set it to
+   * the page that contains the iframe, and have that page hand the token to
+   * the iframe (see "Embedding in an iframe" in the README).
+   */
+  returnUrl?: string;
+}
+
+/** `type` of the message a host page posts into the iframe to hand over a finished session. */
+export const SESSION_MESSAGE_TYPE = "wallet-connect-session";
+
+/** The full return URL: the explicit one resolved against this document, else this document. */
+function resolveReturnUrl(returnUrl?: string): string {
+  if (typeof window === "undefined") return "";
+  return returnUrl ? new URL(returnUrl, window.location.href).toString() : window.location.href;
+}
+
+/**
+ * The session token and nonce out of a host page's message, or null when the
+ * event is not such a message. Only the page the wallet returns to may hand
+ * over a token, so the sender's origin must be the return URL's origin.
+ */
+export function sessionFromMessage(
+  event: MessageEvent,
+  returnUrl: string,
+): { session_token: string; nonce?: string } | null {
+  const data = event.data;
+  if (!data || typeof data !== "object" || data.type !== SESSION_MESSAGE_TYPE) return null;
+  if (typeof data.session_token !== "string" || data.session_token === "") return null;
+  if (!returnUrl || event.origin !== new URL(returnUrl).origin) return null;
+  return { session_token: data.session_token, nonce: typeof data.nonce === "string" ? data.nonce : undefined };
 }
 
 
@@ -159,10 +192,24 @@ function constructURI(clientId: string, session_type: string, walletConnectHost:
   )}&request_uri_method=${request_uri_method}&client_id=${client_id_uri}`;
 }
 
-function WalletConnectButton({ label, serviceId: serviceIdProp, clientId: clientIdProp, onSuccess, apiKey, useLocalWcServer = false, business = false, lang, helpBaseUrl, issuance = false, over18 = false, nbwallet = false }: WalletConnectButtonProps) {
+function WalletConnectButton({ label, serviceId: serviceIdProp, clientId: clientIdProp, onSuccess, apiKey, useLocalWcServer = false, business = false, lang, helpBaseUrl, issuance = false, over18 = false, nbwallet = false, returnUrl }: WalletConnectButtonProps) {
   // `serviceId` and `clientId` are two names for the same value.
   const clientId = serviceIdProp ?? clientIdProp ?? "";
   const [searchParams, setSearchParams, removeSearchParam] = useSearchParams();
+  const resolvedReturnUrl = resolveReturnUrl(returnUrl);
+
+  // Inside an iframe the wallet returns to the host page, not to this document.
+  // The host page hands the token over by posting it in; from there on it is
+  // handled exactly like a token in this document's own query string.
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      const session = sessionFromMessage(event, resolvedReturnUrl);
+      if (!session) return;
+      setSearchParams(session.nonce ? session : { session_token: session.session_token });
+    };
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [resolvedReturnUrl, setSearchParams]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -434,9 +481,7 @@ function WalletConnectButton({ label, serviceId: serviceIdProp, clientId: client
       ref={buttonRef}
       text={label}
       usecase={issuance ? "" : clientId}
-      start-url={`${startHost}/api/create-session?lang=en&return_url=${encodeURIComponent(
-        window.location.href
-      )}`}
+      start-url={`${startHost}/api/create-session?lang=en&return_url=${encodeURIComponent(resolvedReturnUrl)}`}
       lang={lang || "nl"}
       same-device-ul={sameDeviceUl}
       cross-device-ul={crossDeviceUl}
